@@ -1,0 +1,24 @@
+name: checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - run: touch .env.local
+      - uses: jdx/mise-action@c37c93293d6b742fc901e1406b8f764f6fb19dac # v2
+        with:
+          version: 2026.9.14
+          install_args: python uv terraform tflint trivy
+      - run: uv sync --locked --no-python-downloads
+      - run: mise run checks
