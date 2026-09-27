@@ -1,0 +1,18 @@
+[tool_alias]
+infracost = "github:infracost/cli"
+
+[settings]
+task.run_auto_install = false
+
+[env]
+_.file = { path = ".env.local", redact = true }
+
+[tools]
+aws = "2.36.40"
+pre-commit = "4.6.2"
+python = "3.14.2"
+uv = "0.9.25"
+terraform = "1.16.1"
+tflint = "0.64.0"
+trivy = "0.74.0"
+infracost = "2.16.3"

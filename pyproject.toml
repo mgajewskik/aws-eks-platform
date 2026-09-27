@@ -1,0 +1,16 @@
+[project]
+name = "aws-eks-platform-tests"
+version = "0.1.0"
+description = "Tests for the EKS platform repository and its agent workflow"
+requires-python = ">=3.14"
+dependencies = []
+
+[dependency-groups]
+dev = ["pytest>=9,<10"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests/harness"]
+addopts = "--strict-config --strict-markers -ra"
