@@ -37,3 +37,27 @@ _Avoid_: a second Terraform-managed copy of the same resource
 **Deployment session**:
 The period during which the platform is deployed for an experiment.
 _Avoid_: a billing month, a test fixture that creates the platform
+
+**Public application**:
+A workload deliberately exposed to internet clients to provide or demonstrate a platform service.
+_Avoid_: an operator application, the Kubernetes API
+
+**Operator application**:
+A platform interface, such as Argo CD or Grafana, intended for the owner's private administrative access.
+_Avoid_: a public application, a service made private only by an unadvertised name
+
+**Shared foundation**:
+Account resources retained across deployment sessions and reused by the platform or other deployments in the same account.
+_Avoid_: resources necessarily global across AWS Regions, the disposable platform, cluster bootstrap
+
+**System node**:
+A node reserved for foundational platform services whose availability must not depend on workload autoscaling.
+_Avoid_: a node guaranteed never to fail or be evicted, a Karpenter-managed workload node
+
+**Retained certificate state**:
+The certificate chain, private key, and ACME account/renewal state preserved independently of a disposable cluster.
+_Avoid_: retained application data, a certificate that never expires, a public certificate without its matching private key
+
+**Split-view DNS**:
+Public and VPC-associated private hosted zones for the same domain, each with an explicitly managed record set.
+_Avoid_: automatic fallback from a missing private record to the public zone, certificate-based access control
