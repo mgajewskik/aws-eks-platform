@@ -16,3 +16,15 @@ terraform = "1.16.1"
 tflint = "0.64.0"
 trivy = "0.74.0"
 infracost = "2.16.3"
+
+[tasks.checks]
+description = "Required non-mutating gates"
+run = "scripts/checks.sh"
+
+[tasks.docs-gate]
+description = "Feature-close documentation contract"
+run = "scripts/docs-gate.sh"
+
+[tasks.test-harness]
+description = "Local harness regression tests; no cloud or cost API calls"
+run = "uv run --locked --no-sync --no-env-file pytest"
