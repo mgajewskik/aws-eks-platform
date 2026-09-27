@@ -28,3 +28,7 @@ run = "scripts/docs-gate.sh"
 [tasks.test-harness]
 description = "Local harness regression tests; no cloud or cost API calls"
 run = "uv run --locked --no-sync --no-env-file pytest"
+
+[tasks.cost]
+description = "Opt-in Infracost scan. Uses repo env from .env.local. Skips the API when docs/cost.md matches."
+run = "scripts/cost.sh"
