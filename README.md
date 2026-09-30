@@ -4,9 +4,9 @@ An EKS platform built with Terraform for the AWS foundation and GitOps for clust
 
 ## Status
 
-The repository currently contains the development workflow, quality checks, and pytest tests for those checks. `platform/main.tf` is empty, and no cluster manifests are implemented. Passing these checks does not establish that a deployed platform is secure, highly available, or ready for workloads.
+The repository contains a Terraform VPC and private SSM bastion in `platform/`, plus local connection tasks and checks. No infrastructure has been deployed and no cluster manifests are implemented. Passing local checks does not establish live connectivity, security, or availability.
 
-The target is one platform account in Stockholm, with optional connectivity to a transit gateway owned by a separate networking account. The deployed platform must support multi-AZ availability. Exact topology, GitOps and policy engines, bootstrap, and operational acceptance tests remain design work. See [ARCHITECTURE.md](ARCHITECTURE.md).
+The current foundation targets account `220263133738` in Stockholm (`eu-north-1`): three public and three private subnets, regional NAT, and one private AL2023 `t4g.medium` bastion. EKS, GitOps, and optional transit-gateway connectivity remain future work. See [ARCHITECTURE.md](ARCHITECTURE.md).
 
 ## Run local checks
 
@@ -39,9 +39,9 @@ Implementation includes documentation updates and independent review. Commit and
 
 The single GitHub Actions job runs the same `mise run checks` entrypoint as local development. It runs pytest, Terraform formatting and conditional validation/linting, plus Trivy configuration and secret scans. It has no AWS or Infracost credentials. See [AGENTS.md](AGENTS.md) for the required Feature-close documentation check.
 
-Cost analysis is separate through `mise run cost`. It reuses the fingerprint in [docs/cost.md](docs/cost.md); refresh only when explicitly requested. The USD 100 monthly target must account for time deployed and retained resources after teardown. The current empty configuration is not a cost estimate for the intended HA platform.
+Cost analysis is separate through `mise run cost`. It reuses the fingerprint in [docs/cost.md](docs/cost.md); refresh only when explicitly requested. The cached VPC/bastion estimate does not cover EKS, usage, or a complete HA platform. The USD 100 monthly target must account for time deployed and retained resources after teardown.
 
-Deployment is always an explicit operation on the owner's local machine. Deployment commands will be documented with the first implemented platform and its runbook.
+Deployment and the SSM/SSH/sshuttle tunnel are owner-run. Follow the [VPC and bastion runbook](docs/runbooks/vpc-bastion.md) for backend preflight, plan/apply, connectivity, and teardown. `mise run bastion`, `mise run ssh`, and `mise run vpn` require `session-manager-plugin` on `PATH` and use the deployed Terraform connection output. The plugin is managed outside this repository. `sshuttle` is a normal locked uv dependency. The current foundation's cached cost scenarios are in [docs/cost.md](docs/cost.md).
 
 ## Repository map
 
@@ -56,4 +56,4 @@ Deployment is always an explicit operation on the owner's local machine. Deploym
 | [docs/runbooks/](docs/runbooks/), [docs/research/](docs/research/) | Operator procedures and cited research |
 | [.mise.toml](.mise.toml), [pyproject.toml](pyproject.toml), [uv.lock](uv.lock) | Pinned tools and Python dependency lock |
 
-The first platform feature needs a priced multi-AZ topology, explicit bootstrap ownership, and observable security and workload acceptance criteria before implementation.
+EKS implementation and its live acceptance checks remain future work.

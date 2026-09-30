@@ -9,6 +9,7 @@ _.file = { path = ".env.local", redact = true }
 
 [tools]
 aws = "2.36.40"
+jq = "1.8.2"
 pre-commit = "4.6.2"
 python = "3.14.2"
 uv = "0.9.25"
@@ -32,3 +33,15 @@ run = "uv run --locked --no-sync --no-env-file pytest"
 [tasks.cost]
 description = "Opt-in Infracost scan. Uses repo env from .env.local. Skips the API when docs/cost.md matches."
 run = "scripts/cost.sh"
+
+[tasks.bastion]
+description = "Owner-run SSM shell on this deployment's bastion"
+run = "bash scripts/bastion.sh ssm"
+
+[tasks.ssh]
+description = "Owner-run SSH to the bastion through SSM using the local aws-eks-platform key"
+run = "bash scripts/bastion.sh ssh"
+
+[tasks.vpn]
+description = "Owner-run sshuttle for the VPC and ordinary DNS; uses local sudo and stops with Ctrl+C"
+run = "uv run --locked --no-sync --no-env-file bash scripts/bastion.sh vpn"

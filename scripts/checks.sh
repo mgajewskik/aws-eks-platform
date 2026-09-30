@@ -34,7 +34,11 @@ else
 fi
 
 echo "== trivy config =="
-trivy config --exit-code 1 platform/
+trivy_tf_args=()
+if [[ -f platform/default.tfvars ]]; then
+  trivy_tf_args=(--tf-vars platform/default.tfvars)
+fi
+trivy config --exit-code 1 "${trivy_tf_args[@]}" platform/
 
 if [[ -d gitops ]] && find gitops -type f \( -name '*.yaml' -o -name '*.yml' \) -print -quit | grep -q .; then
   echo "== trivy gitops config =="
@@ -49,5 +53,6 @@ trivy fs --scanners secret --exit-code 1 \
   --skip-dirs '**/.git' --skip-dirs '**/.codex' \
   --skip-dirs '**/.terraform' --skip-dirs '**/__pycache__' \
   --skip-dirs '**/.venv' --skip-dirs '**/.pytest_cache' \
+  --skip-dirs '**/.local' \
   --skip-files '**/.env*' --skip-files '**/*.secret.tfvars' \
   --skip-files '**/*.tfstate*' --skip-files '**/*.tfplan' .

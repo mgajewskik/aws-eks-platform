@@ -59,12 +59,14 @@ def test_empty_platform_runs_harness_and_security_checks(check_repo):
 def test_configuration_enables_validation_and_gitops_scan(check_repo):
     root, run_checks = check_repo
     (root / "platform/main.tf").write_text('terraform {}\n')
+    (root / "platform/default.tfvars").write_text('name_prefix = ""\n')
     (root / "gitops").mkdir()
     (root / "gitops/app.yaml").write_text('apiVersion: v1\nkind: Namespace\n')
     result, calls = run_checks()
     assert result.returncode == 0, result.stderr
     assert "terraform init -backend=false -input=false -no-color" in calls
     assert "terraform validate -no-color" in calls
+    assert "trivy config --exit-code 1 --tf-vars platform/default.tfvars platform/" in calls
     assert any(call.startswith("tflint ") for call in calls)
     assert any(call.startswith("trivy config ") and call.endswith("gitops/") for call in calls)
     assert_no_live_commands(calls)

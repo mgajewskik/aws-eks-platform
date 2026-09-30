@@ -1,12 +1,18 @@
 # Architecture
 
-This is the target ownership map, not a deployed inventory. Workflow rules live in [AGENTS.md](AGENTS.md); terms live in [CONTEXT.md](CONTEXT.md).
+This records the implemented VPC and bastion plus the target ownership map. Nothing has been deployed. Workflow rules live in [AGENTS.md](AGENTS.md); terms live in [CONTEXT.md](CONTEXT.md).
 
 **Architecture accepted:** 2026-09-27. The owner confirmed Q17 and closed the architecture interview. Implementation will use separate tasks and staged plans; this document does not authorize deployment or claim that resources exist.
 
 ## Current implementation
 
-`platform/main.tf` is empty. No GitOps manifests or platform modules are implemented. The working capabilities are local checks, pytest harness tests, and agent workflow documentation.
+The disposable `platform/` root now defines a VPC and one private bastion in account `220263133738`, Region `eu-north-1`. It uses the existing, separately owned S3 state bucket `terraform-state-220263133738`, key `eks-platform/platform/terraform.tfstate`, native S3 locking, and non-secret `platform/default.tfvars`. Backend bucket Region and controls still need owner verification before initialization. No Terraform workspaces or GitOps manifests are implemented. No AWS resources have been deployed.
+
+The VPC uses `10.80.0.0/16`, with private `/20` subnets and public `/24` subnets in `eu-north-1a/b/c`. Public subnets do not auto-assign public IPs. One regional NAT serves outbound private routes; actual active AZ coverage needs a live check. Custom public/private NACLs enforce coarse subnet boundaries, while resource security groups own narrower access. The unused default security group has no rules. Terraform creates CloudWatch VPC Flow Logs with seven-day retention and deletes their log group on platform teardown.
+
+The AL2023 ARM64 `t4g.medium` bastion sits in the `eu-north-1a` private subnet, with no public IP or inbound security-group rules. Its encrypted 8 GiB gp3 root disk, IMDSv2 requirement, SSM instance role, and cloud-init SSH setup are defined in Terraform. Cloud-init adds only the owner's public key; `~/.ssh/aws-eks-platform` stays on the laptop. Image or configuration changes replace this single instance and interrupt access. Cloud-init completion, SSM/SSH readiness, and tunnel capacity still need live checks.
+
+The owner starts SSM, SSH over SSM, and sshuttle from local mise tasks. Application traffic through sshuttle is limited to `10.80.0.0/16`; `--dns` temporarily forwards ordinary laptop DNS queries through the bastion to VPC DNS. This does not capture DNS-over-HTTPS. Ctrl+C ends the tunnel. See the [runbook](docs/runbooks/vpc-bastion.md) for live validation and cleanup.
 
 ## Target and ownership
 
@@ -45,15 +51,15 @@ Cloudflare retains the `mgajewskik.dev` parent zone. Route 53 hosts the reusable
 
 ExternalDNS is required and installed through GitOps. It owns application DNS records requested through the selected Kubernetes ingress or route API. Terraform owns zones and delegation. Certificate validation records belong to their issuer workflow. Public and private reconciliation use distinct zone-scoped identities, source filters, and TXT ownership. Remove application records while the controller still runs before deleting ingress resources or the cluster. Exact controller versions and source APIs belong to the implementation plan.
 
-The shared foundation in `platform/shared/` uses independent Terraform state so ECR caches and public DNS survive platform teardown. The state bucket is an existing user-supplied prerequisite, `terraform-state-220263133738`, whose configuration has not been inspected. The VPC-associated private zone and workload records have separate lifecycle requirements from the shared public zone. No roots or lifecycle split are implemented yet. See [ADR-0006](docs/adr/0006-separate-shared-foundation-lifecycle.md).
+The future shared foundation in `platform/shared/` will use independent Terraform state so ECR caches and public DNS can survive platform teardown. The disposable root and its backend configuration are implemented; the state bucket is an existing user-supplied prerequisite whose Region and controls have not been inspected. The VPC-associated private zone and workload records have separate lifecycle requirements from the shared public zone. No shared root or private zone is implemented yet. See [ADR-0006](docs/adr/0006-separate-shared-foundation-lifecycle.md).
 
-Workload data is disposable. The owner selected a clean slate for each experiment rather than retaining application volumes or restoring application state. Shared foundation and state-backend retention remain unchanged. Certificate and ACME account state now explicitly persist outside the cluster. Diagnostic-log retention remains open.
+Workload data is disposable. The owner selected a clean slate for each experiment rather than retaining application volumes or restoring application state. Shared foundation and state-backend retention remain unchanged. Certificate and ACME account state now explicitly persist outside the cluster. VPC Flow Logs retain seven days while deployed; the disposable log group is removed at teardown. Later diagnostic-log policies remain open.
 
 The accepted deployment sequence is Terraform foundation, a separate Ansible configuration stage if needed, establishment of private connectivity, Terraform bootstrap of Argo CD and Karpenter, and GitOps reconciliation of the remaining software. Terraform supplies infrastructure-derived controller configuration directly and owns the baseline NodePool and EC2NodeClass. Both controllers use one initial managed system node outside Karpenter's lifecycle, with one Karpenter replica and compatible non-HA Argo CD settings. Required node selection keeps them off workload nodes. This accepts a single-node failure boundary. External Secrets Operator is under consideration for runtime credentials, not controller bootstrap values. Exact provider versions, CRD ordering, and recovery steps must be settled before their implementation. See [ADR-0007](docs/adr/0007-bootstrap-argocd-and-karpenter-with-terraform.md).
 
 ## Ingress target
 
-This is the accepted topology, not a deployed network. Three public subnets host public ingress across the three AZs. Private subnets host nodes, private gateways, the bastion, and internal ingress. The regional NAT is an outbound service, not an inbound gateway or a resource hosted in one public subnet.
+This diagram shows the accepted future topology, not a deployed network. The VPC and bastion are implemented in Terraform; EKS nodes, gateways, load balancers, and applications are not. Three public subnets can host future public ingress across the three AZs. Private subnets can host nodes, private gateways, and internal ingress. The regional NAT is an outbound service, not an inbound gateway or a resource hosted in one public subnet.
 
 ```mermaid
 flowchart TD
