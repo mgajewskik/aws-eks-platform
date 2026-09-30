@@ -7,6 +7,10 @@ task.run_auto_install = false
 [env]
 _.file = { path = ".env.local", redact = true }
 
+AWS_REGION = "eu-north-1"
+AWS_DEFAULT_REGION = "eu-north-1"
+AWS_ACCOUNT_ID = "220263133738"
+
 [tools]
 aws = "2.36.40"
 jq = "1.8.2"
@@ -33,6 +37,22 @@ run = "uv run --locked --no-sync --no-env-file pytest"
 [tasks.cost]
 description = "Opt-in Infracost scan. Uses repo env from .env.local. Skips the API when docs/cost.md matches."
 run = "scripts/cost.sh"
+
+[tasks.init]
+description = "Owner-run Terraform init with -reconfigure and backend settings from backend.s3.hcl"
+run = "terraform -chdir=platform init -reconfigure -backend-config=backend.s3.hcl"
+
+[tasks.plan]
+description = "Owner-run Terraform plan with default.tfvars; displays changes without saving a plan file"
+run = "terraform -chdir=platform plan -var-file=default.tfvars"
+
+[tasks.apply]
+description = "Owner-run Terraform apply with default.tfvars; applies a fresh plan without a confirmation prompt"
+run = "terraform -chdir=platform apply -var-file=default.tfvars -auto-approve"
+
+[tasks.destroy]
+description = "Owner-run Terraform destroy with default.tfvars; deletes resources without a confirmation prompt"
+run = "terraform -chdir=platform destroy -var-file=default.tfvars -auto-approve"
 
 [tasks.bastion]
 description = "Owner-run SSM shell on this deployment's bastion"
