@@ -1,16 +1,21 @@
 # Tests
 
-Run the local harness regression tests with `rtk proxy mise run test-harness`. The task invokes `uv run --locked --no-sync --no-env-file pytest`. [`pyproject.toml`](../pyproject.toml) selects `tests/harness` by default, and [`uv.lock`](../uv.lock) records the Python dependencies. Bootstrap those dependencies separately with `rtk proxy uv sync --locked`; required checks do not sync or install packages. The harness tests need no AWS credentials or Kubernetes context.
+All tests use pytest, with dependencies locked by uv. CLI tools such as Terraform are validators that pytest may call.
 
-Run the required repository checks with `rtk proxy mise run checks`. That command needs no cloud credentials and must not deploy the platform, run live tests, or call Infracost. Mise loads `.env.local` for every local task; uv's `--no-env-file` does not remove that inherited environment. Never print its values in tests or reports. Terraform initialization and Trivy checks may use the network to fetch tool data. Pytest is the sole test runner, including for future platform tests; CLI tools remain validators or renderers that pytest can call.
+| Layer | Status | Scope |
+|---|---|---|
+| Harness (`tests/harness/`) | Implemented | Default collection. Check dispatch, plan policy and plan script, cost cache check, Terraform variables, and access scripts. No credentials or cloud access. |
+| Terraform | Implemented in checks | Format, validate, TFLint, and Trivy. Native `.tftest.hcl` tests are not used. |
+| Plan policy | Implemented | `mise run plan` checks the resolved plan before saving it for apply. Read-only credentials. |
+| Live (`tests/live/test_deployed.py`) | Implemented | `mise run verify-live`: no drift, bastion reachable only through SSM, flow logs delivered. Read-only; verifies account and Region first. |
+| Controller leftovers | Planned | Added with the first controller that provisions AWS resources: nothing tagged for the cluster remains after destroy. |
+| GitOps and policy | Planned | Render manifests, validate schemas, and assert allowed and denied policy examples. Credential-free. |
+| Workload scenarios | Out of scope | Cases that create or change live resources. |
 
-Future platform tests belong in separate layers:
+```bash
+mise run test-harness     # harness only
+mise run checks           # harness plus Terraform and security checks
+mise run verify-live      # after apply
+```
 
-| Layer | Entry and scope |
-|---|---|
-| Terraform module checks | Keep Terraform format, validate, TFLint, and Trivy in required checks. Add pytest assertions over safe local artifacts only when modules provide meaningful cases. Native `.tftest.hcl` files are not adopted. Do not make a credentialed Terraform plan or platform lifecycle part of tests. |
-| GitOps and policy tests | Add pytest cases that render manifests, validate schemas, and assert allowed and denied policy examples after the GitOps and policy engines are selected. Keep them credential-free. |
-| Read-only live tests | Add explicit pytest paths after manual deployment. Require AWS account, `eu-north-1` region, cluster identity, and Kubernetes context checks before AWS or cluster reads. Keep those paths outside the default selection, `mise run checks`, and CI. Add Python packages through uv when needed. |
-| Temporary workload scenarios | The owner explicitly runs bounded pytest cases for policy admission, ALB, EBS, or network traffic. Name the resources, then verify both Kubernetes and AWS cleanup. Never use Terraform apply or destroy as test setup or teardown. |
-
-The harness now checks local VPC configuration policies. It does not prove deployment, SSM/SSH connectivity, DNS routing, tunnel cleanup, or availability. The owner-run acceptance steps are in the [VPC and bastion runbook](../docs/runbooks/vpc-bastion.md); no bespoke live bastion pytest suite is required. The [testing research](../docs/research/2026-09-27-eks-testing-strategy.md) compares broader test layers, evidence, cost, and cleanup limits.
+Tests never apply or destroy the platform; Terraform lifecycle is never a fixture. Live cases check what the plan policy cannot see, such as changes made outside Terraform and runtime behavior, rather than repeat it. Interactive SSH and tunnel checks are in the [bastion runbook](../docs/runbooks/vpc-bastion.md).

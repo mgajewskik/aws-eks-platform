@@ -13,4 +13,5 @@ package = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests/harness"]
+pythonpath = ["scripts"]
 addopts = "--strict-config --strict-markers -ra"

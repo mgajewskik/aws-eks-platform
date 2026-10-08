@@ -9,7 +9,6 @@ _.file = { path = ".env.local", redact = true }
 
 AWS_REGION = "eu-north-1"
 AWS_DEFAULT_REGION = "eu-north-1"
-AWS_ACCOUNT_ID = "220263133738"
 
 [tools]
 aws = "2.36.40"
@@ -26,16 +25,12 @@ infracost = "2.16.3"
 description = "Required non-mutating gates"
 run = "scripts/checks.sh"
 
-[tasks.docs-gate]
-description = "Feature-close documentation contract"
-run = "scripts/docs-gate.sh"
-
 [tasks.test-harness]
 description = "Local harness regression tests; no cloud or cost API calls"
 run = "uv run --locked --no-sync --no-env-file pytest"
 
 [tasks.cost]
-description = "Opt-in Infracost scan. Uses repo env from .env.local. Skips the API when docs/cost.md matches."
+description = "Infracost scan at feature close; skips the API while docs/cost.md matches. --check never calls it."
 run = "scripts/cost.sh"
 
 [tasks.init]
@@ -43,16 +38,16 @@ description = "Owner-run Terraform init with -reconfigure and backend settings f
 run = "terraform -chdir=platform init -reconfigure -backend-config=backend.s3.hcl"
 
 [tasks.plan]
-description = "Owner-run Terraform plan with default.tfvars; displays changes without saving a plan file"
-run = "terraform -chdir=platform plan -var-file=default.tfvars"
+description = "Plan with default.tfvars; saves platform/tfplan only if the plan policy passes. Pass -destroy to tear down."
+run = "scripts/plan.sh"
 
 [tasks.apply]
-description = "Owner-run Terraform apply with default.tfvars; applies a fresh plan without a confirmation prompt"
-run = "terraform -chdir=platform apply -var-file=default.tfvars -auto-approve"
+description = "Owner-run: apply exactly the saved platform/tfplan, without a prompt, then discard it"
+run = ["terraform -chdir=platform apply -input=false tfplan", "rm platform/tfplan"]
 
-[tasks.destroy]
-description = "Owner-run Terraform destroy with default.tfvars; deletes resources without a confirmation prompt"
-run = "terraform -chdir=platform destroy -var-file=default.tfvars -auto-approve"
+[tasks.verify-live]
+description = "Read-only checks of the deployed platform; needs AWS credentials"
+run = "uv run --locked --no-sync --no-env-file pytest tests/live/test_deployed.py"
 
 [tasks.bastion]
 description = "Owner-run SSM shell on this deployment's bastion"
