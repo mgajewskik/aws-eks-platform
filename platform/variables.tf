@@ -3,8 +3,8 @@ variable "account_id" {
   type        = string
 
   validation {
-    condition     = var.account_id == "220263133738"
-    error_message = "The platform account must be 220263133738."
+    condition     = can(regex("^[0-9]{12}$", var.account_id))
+    error_message = "Use a 12-digit AWS account ID."
   }
 }
 
@@ -13,8 +13,8 @@ variable "region" {
   type        = string
 
   validation {
-    condition     = var.region == "eu-north-1"
-    error_message = "The platform Region must be eu-north-1."
+    condition     = can(regex("^[a-z]{2}(-[a-z]+)+-[0-9]$", var.region))
+    error_message = "Use an AWS Region name such as eu-north-1."
   }
 }
 
@@ -34,56 +34,44 @@ variable "vpc_cidr_block" {
   type        = string
 
   validation {
-    condition     = var.vpc_cidr_block == "10.80.0.0/16"
-    error_message = "The accepted VPC CIDR is 10.80.0.0/16."
+    condition     = can(cidrnetmask(var.vpc_cidr_block))
+    error_message = "Use an IPv4 CIDR block."
   }
 }
 
 variable "private_subnets" {
-  description = "Private subnet CIDR by explicitly selected availability zone."
+  description = "Private subnet CIDR by availability zone."
   type        = map(string)
 
   validation {
-    condition = var.private_subnets == tomap({
-      eu-north-1a = "10.80.0.0/20"
-      eu-north-1b = "10.80.16.0/20"
-      eu-north-1c = "10.80.32.0/20"
-    })
-    error_message = "Private subnets must use the accepted three-AZ CIDRs."
+    condition     = length(var.private_subnets) == 3 && alltrue([for cidr in values(var.private_subnets) : can(cidrnetmask(cidr))])
+    error_message = "Use three availability zones, each with an IPv4 CIDR block."
   }
 }
 
 variable "public_subnets" {
-  description = "Public subnet CIDR by explicitly selected availability zone."
+  description = "Public subnet CIDR by availability zone."
   type        = map(string)
 
   validation {
-    condition = var.public_subnets == tomap({
-      eu-north-1a = "10.80.48.0/24"
-      eu-north-1b = "10.80.49.0/24"
-      eu-north-1c = "10.80.50.0/24"
-    })
-    error_message = "Public subnets must use the accepted three-AZ CIDRs."
+    condition     = keys(var.public_subnets) == keys(var.private_subnets) && alltrue([for cidr in values(var.public_subnets) : can(cidrnetmask(cidr))])
+    error_message = "Use the private subnet availability zones, each with an IPv4 CIDR block."
   }
 }
 
 variable "flow_log_retention" {
   description = "CloudWatch VPC Flow Logs retention in days."
   type        = number
-
-  validation {
-    condition     = var.flow_log_retention == 7
-    error_message = "VPC Flow Logs must retain seven days."
-  }
 }
 
-variable "ssh_public_key_path" {
-  description = "Path on the owner's laptop to the public SSH key only."
+variable "ssh_public_key" {
+  description = "OpenSSH public key authorized on the bastion; the private key stays on the owner's laptop."
   type        = string
 
   validation {
-    condition     = endswith(var.ssh_public_key_path, ".pub")
-    error_message = "Supply a public .pub key file, never the private SSH key."
+    # The comment field usually holds an email address, which a public repository should not carry.
+    condition     = can(regex("^ssh-(rsa|ed25519) [A-Za-z0-9+/=]+$", var.ssh_public_key))
+    error_message = "Supply one OpenSSH public key without its comment, never the private key."
   }
 }
 

@@ -26,10 +26,11 @@ module "bastion" {
   name_prefix    = local.name
   vpc_id         = module.vpc.vpc_id
   vpc_cidr       = module.vpc.cidr_block
-  subnet_id      = module.vpc.private_subnet_ids["eu-north-1a"]
-  ssh_public_key = file(pathexpand(var.ssh_public_key_path))
+  subnet_id      = module.vpc.private_subnet_ids[local.bastion_availability_zone]
+  ssh_public_key = var.ssh_public_key
   instance_type  = var.bastion_instance_type
   tags           = local.tags
 
+  # Boot only after the NAT route exists: cloud-init and the SSM agent need egress.
   depends_on = [module.vpc]
 }

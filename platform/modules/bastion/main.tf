@@ -105,5 +105,11 @@ resource "aws_instance" "bastion" {
       - [systemctl, enable, --now, amazon-ssm-agent]
   CLOUD_INIT
 
+  # The AMI is resolved at creation. A newer image does not replace the
+  # running bastion; replace it deliberately to pick up a new image.
+  lifecycle {
+    ignore_changes = [ami]
+  }
+
   tags = merge(var.tags, { Name = "${var.name_prefix}-bastion" })
 }
