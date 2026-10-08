@@ -65,13 +65,13 @@ No topology, trust, resource ownership, connectivity, or reconciliation changes.
 
 ## Validation
 
-- `rtk proxy mise run --dry-run plan`, `apply`, and `destroy` → C1-C3 and A1-A2 without executing Terraform.
-- `rtk proxy mise run --dry-run init` → C5 task expansion without an AWS request or Terraform initialization.
+- `mise run --dry-run plan`, `apply`, and `destroy` → C1-C3 and A1-A2 without executing Terraform.
+- `mise run --dry-run init` → C5 task expansion without an AWS request or Terraform initialization.
 - Owner-provided bucket Region and current backend file → C6.
-- `rtk proxy mise exec -- terraform init -help` → C5 supported reconfigure/file flags without backend access.
-- `rtk proxy mise exec -- terraform plan -help`, `apply -help`, and `destroy -help` → installed output and approval semantics for C1-C3.
-- `rtk proxy mise run checks` → required local regression and security gates.
-- `rtk proxy mise run docs-gate -- --plan docs/plans/2026-09-30-terraform-mise-tasks.md` → C4 documentation evidence structure.
+- `mise exec -- terraform init -help` → C5 supported reconfigure/file flags without backend access.
+- `mise exec -- terraform plan -help`, `apply -help`, and `destroy -help` → installed output and approval semantics for C1-C3.
+- `mise run checks` → required local regression and security gates.
+- `mise run docs-gate -- --plan docs/plans/2026-09-30-terraform-mise-tasks.md` → C4 documentation evidence structure.
 - Snapshot comparison and direct independent review → C4 and A1-A3.
 
 ## Out of Scope

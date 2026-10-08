@@ -7,7 +7,7 @@ date: 2026-09-27
 
 ## Context and Problem Statement
 
-The owner destroys the EKS platform between experiments. Deleting the image cache would force new upstream image downloads on the next deployment. Recreating public DNS delegation would also disrupt a namespace intended for other applications in the account.
+The owner destroys the EKS platform between deployment sessions. Deleting the image cache would force new upstream image downloads on the next deployment. Recreating public DNS delegation would also disrupt a namespace intended for other applications in the account.
 
 ## Considered Options
 
@@ -19,9 +19,9 @@ The owner destroys the EKS platform between experiments. Deleting the image cach
 
 Chosen option: "Use a separate Terraform root and state for retained resources", because the shared foundation has a different lifecycle and the project already uses Terraform.
 
-Use `platform/shared/` for the shared foundation. The name describes reuse and retention across experiments; it does not imply that every resource is region-global. The ECR cache remains regional in Stockholm.
+Use `platform/shared/` for the shared foundation. The name describes reuse and retention across deployment sessions; it does not imply that every resource is region-global. The ECR cache remains regional in Stockholm.
 
-This root owns the ECR cache configuration, the public Route 53 zone `aws.mgajewskik.dev`, and that zone's delegation records in the existing Cloudflare parent zone. Use the Cloudflare provider for those NS records. The parent zone and its unrelated records remain outside this root's ownership.
+This root owns the ECR cache configuration, the public Route 53 platform zone (for example `aws.example.com`), and that zone's delegation records in the existing Cloudflare parent zone. Use the Cloudflare provider for those NS records. The parent zone and its unrelated records remain outside this root's ownership.
 
 The disposable platform uses independent state and does not own the shared resources. Workload DNS records and controller-created load balancers still follow their workloads and need cleanup before their controllers are removed. Persistent public DNS does not imply that a VPC-associated private zone must survive deletion of that VPC.
 

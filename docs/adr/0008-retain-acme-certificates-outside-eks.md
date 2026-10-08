@@ -23,7 +23,7 @@ Retain the certificate, full chain, matching private key, and required ACME acco
 
 Certificate retention is an explicit exception to disposable application data. No cert-manager installation is required for this ingress certificate path. Istio workload identity remains a separate system with its own certificate rotation.
 
-The owner accepted Q17 on 2026-09-27: use one `*.aws.mgajewskik.dev` wildcard, single-level application names, public/private split-view DNS, and scheduled Lambda renewal outside the disposable VPC. The architecture document explains the DNS consequences; separate implementation plans must prove Lambda state recovery, renewal, and delivery behavior.
+On 2026-09-27 the owner accepted one wildcard for the platform zone (for example `*.aws.example.com`), single-level application names, public/private split-view DNS, and scheduled Lambda renewal outside the disposable VPC. The architecture document explains the DNS consequences; separate implementation plans must prove Lambda state recovery, renewal, and delivery behavior.
 
 ### Consequences
 
@@ -37,4 +37,4 @@ The owner accepted Q17 on 2026-09-27: use one `*.aws.mgajewskik.dev` wildcard, s
 
 Before production use, prove staging issuance, durable state recovery, no new order on a rebuild with a valid certificate, renewal publication, and the certificate actually served by both gateways. A failed renewal must preserve the last valid published bundle and report failure. Verify no private keys enter Git, Terraform state, logs, or deployment outputs.
 
-See the [architecture](../../ARCHITECTURE.md), [living plan](../plans/2026-09-27-private-eks-foundation.md), and [research](../research/2026-09-27-private-eks-foundation.md). This ADR records a decision, not deployed infrastructure.
+See the [architecture](../../ARCHITECTURE.md) and [living plan](../plans/2026-09-27-private-eks-foundation.md). This ADR records a decision, not deployed infrastructure.

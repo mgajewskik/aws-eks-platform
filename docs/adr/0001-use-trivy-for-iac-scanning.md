@@ -21,8 +21,6 @@ Chosen option: "Trivy config only", because Aqua's own tfsec README and migratio
 
 Required command: `trivy config --exit-code 1 platform/`. Pin Trivy in `.mise.toml` at ≥ 0.71.1 (never 0.69.4). Drop the tfsec pin once that command is in `mise run checks`. Do not run both scanners as required gates.
 
-Evidence: [docs/research/2026-09-07-trivy-vs-tfsec.md](../research/2026-09-07-trivy-vs-tfsec.md).
-
 ### Consequences
 
 * Good, because the required scanner is the one Aqua is actively updating, including Kubernetes/YAML later under `gitops/`.

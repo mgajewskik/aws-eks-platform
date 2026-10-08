@@ -21,3 +21,5 @@ __pycache__/
 *.pyc
 !.mise.toml
 .DS_Store
+docs/research/
+.claude/settings.local.json

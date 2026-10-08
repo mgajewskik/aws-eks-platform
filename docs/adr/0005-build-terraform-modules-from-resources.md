@@ -7,7 +7,7 @@ date: 2026-09-27
 
 ## Context and Problem Statement
 
-This platform is a learning project. The owner wants to understand each resource, dependency, and lifecycle inside its Terraform modules. Using a prebuilt VPC or EKS module would hide part of the work the project is intended to teach.
+This platform is a reference architecture: every resource, dependency, and lifecycle should be visible and owned in this repository. A prebuilt VPC or EKS module hides those details behind a general-purpose abstraction and many unused options.
 
 ## Considered Options
 
@@ -17,7 +17,7 @@ This platform is a learning project. The owner wants to understand each resource
 
 ## Decision Outcome
 
-Chosen option: "Author repository-owned modules from Terraform provider resource blocks", because learning the internals is an explicit goal.
+Chosen option: "Author repository-owned modules from Terraform provider resource blocks", because owning and understanding every resource is an explicit goal.
 
 All Terraform child modules are written from scratch in this repository and referenced through local paths. Do not consume remote modules or vendor prebuilt modules as a shortcut. Provider plugins remain the mechanism for managing AWS and bootstrap resources; this decision does not require writing custom providers.
 
@@ -25,7 +25,7 @@ Start with the resources needed for this platform. Do not reproduce a general-pu
 
 ### Consequences
 
-* Resource ownership, routing, permissions, and dependencies remain visible for study and review.
+* Resource ownership, routing, permissions, and dependencies remain visible for review.
 * The repository owns compatibility, testing, security checks, and maintenance that an external module would otherwise provide.
 * Implementation takes longer, and resource coverage must be checked explicitly rather than inferred from a module's reputation.
 
