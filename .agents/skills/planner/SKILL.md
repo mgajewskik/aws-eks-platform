@@ -7,7 +7,7 @@ description: Plan work as a living markdown file with binary success criteria, a
 
 Create one **living plan file** for new work and keep it current as the picture sharpens. The file is both the implementation contract and the decision record, and it lands on disk early so a lost context never loses the plan. It scales from a single small feature to multi-lane work.
 
-This skill produces the plan file. Read the repository's `AGENTS.md` for the workflow and use the [repository plan template](../../../docs/plans/TEMPLATE.md), including its documentation evidence section. A planning-only request stops at the plan. An existing request to implement may authorize the next stage once material decisions are settled.
+This skill produces the plan file. Read the repository's `AGENTS.md` for the workflow and use the [repository plan template](../../../docs/plans/TEMPLATE.md). A planning-only request stops at the plan. An existing request to implement may authorize the next stage once material decisions are settled.
 
 ## Process
 
@@ -30,11 +30,11 @@ As soon as the goal can be named, put the file on disk — before any interview.
 
 Name it `YYYY-MM-DD-<kebab-slug>.md`, fill the repository template with what framing and exploration already settled, set `Status: draft`. Done when the file exists on disk.
 
-### 4. Run the mandatory design interview
+### 4. Interview when a decision is open
 
-Load and use the installed global `grill-with-docs` skill for every plan, including when the user did not name it. Its global `grilling` and `domain-modeling` dependencies remain global. Do not copy these supporting skills into this repository. If a required global skill is unavailable, stop and report the missing dependency instead of silently skipping the interview.
+When a decision that would change the goal, criteria, or workstreams is still open, load and use the installed global `grill-with-docs` skill. Its global `grilling` and `domain-modeling` dependencies remain global. Do not copy these supporting skills into this repository. If a required global skill is unavailable, stop and report the missing dependency instead of guessing the decision.
 
-Recover decisions already answered before asking anything. Follow the interview's rounds, record answers in this plan, and update resolved terms or qualifying ADRs as directed. A settled scope can have no unanswered questions; record that result and the existing authorization. The interview always establishes:
+Recover decisions already answered before asking anything. Record answers in this plan, and update resolved terms or qualifying ADRs. A settled scope needs no interview; record that and the existing authorization. Either way, the plan establishes:
 
 - What does done look like, observably? → feeds success criteria
 - What must never happen? → feeds anti-criteria — every non-trivial plan needs at least one
@@ -43,13 +43,13 @@ Done when no open decision would still change the goal, criteria, or workstreams
 
 ### 5. Show architecture changes
 
-Assess whether the plan changes topology, account or trust boundaries, resource ownership, connectivity, or reconciliation/data flow. If the change can be usefully shown, include a Mermaid diagram in the plan's Architecture impact section. Label current and proposed behavior, show affected boundaries and ownership, and avoid implying that proposed resources already exist. A before/after pair is useful when a single diagram hides the change.
+Assess whether the plan changes topology, account or trust boundaries, resource ownership, connectivity, or reconciliation/data flow. If the change can be usefully shown, include a Mermaid diagram in the plan's Decisions. Label current and proposed behavior, show affected boundaries and ownership, and avoid implying that proposed resources already exist. A before/after pair is useful when a single diagram hides the change.
 
-Check that the diagram agrees with the written decisions and inspect a rendered diagram when a renderer is available. Record unavailable rendering rather than claiming it passed. If no architecture changes or a diagram cannot clarify the change, state the specific reason in that section. Update `ARCHITECTURE.md` with the implementation, not as a substitute for the plan's diagram.
+Check that the diagram agrees with the written decisions and inspect a rendered diagram when a renderer is available. Record unavailable rendering rather than claiming it passed. If no architecture changes or a diagram cannot clarify the change, say so in one line. Update `ARCHITECTURE.md` with the implementation, not as a substitute for the plan's diagram.
 
 ### 6. Define done
 
-Map every requirement and hard constraint to a **binary** success criterion with a concrete verification method: a command with a pass/fail signal, an observable state, or a measured threshold with units. Anti-criteria name the likely regressions, scope leaks, and forbidden shortcuts, verified by non-occurrence. Replace "works correctly"-style vagueness with observable outcomes. A criterion without a verification method keeps the plan in `draft`.
+Map every requirement and hard constraint to a **binary** success criterion with a concrete verification method: a command with a pass/fail signal, an observable state, or a measured threshold with units. Tag each criterion with the verification tier from `AGENTS.md` that proves it (`static`, `plan`, or `live`); prefer the earliest tier that can prove it, and add a `live` criterion only for behavior earlier tiers cannot see. When a change adds a resource type, add a criterion for its plan-policy invariants. Anti-criteria name the likely regressions, scope leaks, and forbidden shortcuts, verified by non-occurrence. Replace "works correctly"-style vagueness with observable outcomes. A criterion without a verification method keeps the plan in `draft`.
 
 ### 7. Shape the workstreams
 
@@ -60,7 +60,7 @@ Break the work into tracer-bullet workstreams:
 - small work is exactly one workstream
 - every workstream maps to at least one criterion, every criterion to at least one workstream
 
-Independent workstreams are what make a plan loopable: when they exist, flag `Loop candidate: yes` — a later loop skill can execute the plan task-by-task in fresh contexts. This skill only flags candidacy.
+Independent workstreams let parallel subagents each take one in a fresh context; the Progress section lets a later session resume where work stopped.
 
 ### 8. Confirm
 
@@ -68,8 +68,8 @@ Present the goal, criteria, workstreams, and validation commands. Use explicit a
 
 ## Living file
 
-The plan file is the single source of truth for the work: update it whenever new information lands or the plan changes shape. Status flow: `draft` → `ready` → `in progress` → `done`; `done` requires every validation check executed with evidence.
+The plan file is the single source of truth for the work: update it whenever new information lands or the plan changes shape. Status flow and its meaning are defined in `AGENTS.md`: `draft` → `ready` → `in progress` → `done` → `verified`.
 
 ## Template
 
-Use [docs/plans/TEMPLATE.md](../../../docs/plans/TEMPLATE.md). Keep this schema in one place so plans include the current Docs gate, Progress, and Outcomes sections.
+Use [docs/plans/TEMPLATE.md](../../../docs/plans/TEMPLATE.md). Keep the schema there, in one place.

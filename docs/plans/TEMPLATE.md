@@ -1,78 +1,47 @@
-# <Feature title>
-
-Save as `docs/plans/YYYY-MM-DD-<kebab-slug>.md`. Keep this plan current as decisions and evidence change.
+# <Title>
 
 **Status:** draft
-**Loop candidate:** no
 **Date:** YYYY-MM-DD
 
-Status flow: `draft` → `ready` → `in progress` → `done`. A Feature reaches `done` only after its criteria, anti-criteria, validation, and Docs gate pass.
+Status: `draft` → `ready` → `in progress` → `done` → `verified`, as defined in AGENTS.md.
 
 ## Goal
 
-<Observable outcome from the user's perspective.>
+<Observable outcome.>
 
-### Success criteria
+### Criteria
 
-- [ ] C1: <Binary result and how to verify it.>
+Tag each with the tier that proves it: `static`, `plan`, or `live`.
+
+- [ ] C1 [static]: <Binary result>. Verify: <command or observation>.
 
 ### Anti-criteria
 
-- [ ] A1: <Forbidden outcome or regression and how to check its absence.>
+- [ ] A1: <What must not happen>. Verify: <how its absence is checked>.
 
-## Context & References
-
-- <Inspected path or source and why it matters.>
+**Out of scope:** <What this plan excludes.>
 
 ## Decisions
 
-- <Outcome of the mandatory global grill-with-docs interview, including settled decisions and open questions.>
-- <Decision, reason, and relevant rejected alternative.>
-
-## Architecture impact
-
-<State whether topology, trust/account boundaries, ownership, connectivity, or reconciliation/data flow changes. If a diagram clarifies the change, include a Mermaid diagram here with current/proposed labels and affected boundaries. Otherwise state why a diagram is not applicable. Record rendering validation or its limitation.>
+- <Decision, reason, and the alternative rejected.>
+- Expected replacements and deletions: <addresses, or none>.
+- Security review: <privilege, credentials, exposure, destructive effects, or none>.
+- Architecture: <the change with a Mermaid diagram when one clarifies it, or none>.
 
 ## Workstreams
 
-Small work has one workstream. Each criterion belongs to a workstream; list blocking edges when workstreams can run independently.
+Each workstream is a slice one session or subagent can finish and verify alone.
 
 ### WS-1: <Title>
 
-**Delivers:** <End-to-end behavior>
 **Blocked by:** None
-**Seams:** <Interface under test, if applicable>
 
-- [ ] <Verifiable slice>
-
-## Validation
-
-- `<command or observation>` → proves <criterion>
-
-## Out of Scope
-
-<What this plan excludes.>
-
-## Docs gate
-
-At Feature close, replace each line with exactly one of:
-
-- Checked: `- [x] Label: evidence: <repo-relative-file> | <specific description>`
-- Unchecked optional category: `- [ ] Label: skip: <specific nonempty reason>`
-
-The Plan item must be checked and point to this plan. Evidence files must exist inside the repository. The command checks format and file existence; the reviewer checks whether the evidence and skip decisions are true. Run `mise run docs-gate -- --plan <this-file>` before setting Status to `done`.
-
-- [ ] Plan:
-- [ ] Architecture:
-- [ ] Runbook:
-- [ ] ADR:
-- [ ] Glossary:
-- [ ] README:
+- [ ] <Slice> → C1
 
 ## Progress
 
-<Dated work and validation notes.>
+<Dated entries: what was done, how, the evidence, and where to resume.>
 
 ## Outcomes
 
-<What shipped, validation result, and remaining limits.>
+<What shipped, docs updated, tier results, and remaining limits.>

@@ -1,58 +1,69 @@
-# How to use this harness
+# Agent harness
 
-Read [AGENTS.md](../../AGENTS.md) for the authoritative workflow, safety rules, and check commands. This guide explains how the repository-local skills fit together.
+[AGENTS.md](../../AGENTS.md) holds the rules. This guide shows how the pieces fit and where they are heading.
 
-## Plan and implement a change
+## Loop
 
-1. Use [planner](../../.agents/skills/planner/SKILL.md) to create a living file under `docs/plans/`. Its mandatory global `grill-with-docs` interview resolves design decisions and terms. Use the [plan template](../plans/TEMPLATE.md), name binary criteria and anti-criteria, and diagram architecture changes when a diagram clarifies them.
-2. Use [implementer](../../.agents/skills/implementer/SKILL.md) to execute authorized work. Reproduce bugs, run focused pytest cases, and update affected documentation with the code.
-3. Run `rtk proxy mise run checks`. At Feature close, fill the documentation evidence and run `rtk proxy mise run docs-gate -- --plan <plan-path>`.
-4. Give a fresh independent reviewer the plan, task-start baseline, all changed/new files, and validation evidence. Its assignment is review-only: inspect, run permitted checks, and report findings. Normal write permissions are acceptable, but the reviewer leaves repository edits and fixes to the implementer. Fix blockers and obtain `Decision: PASS`.
-5. Review the ready changes and decide when to commit or publish. Use the installed global `commit` skill and Conventional Commits with `Why:` and `What:` sections for commit messages. A completed implementation does not authorize a commit, push, or deployment.
-
-When a user asks only for planning, stop at the plan. Existing implementation authorization does not need another permission question unless a material decision or risk changes.
-
-The [reviewer skill](../../.agents/skills/reviewer/SKILL.md) handles explicit reviews since a Git ref or file snapshot. It retains separate Spec and Standards reports. Automatic completion review uses one dedicated independent reviewer, so it does not recursively start another review workflow. If the runtime cannot provide independent review, report blocked. The repository does not require read-only filesystem permissions; stricter session-level restrictions may still apply.
-
-## Local skill copies
-
-The `planner`, `implementer`, and `reviewer` directories contain real procedures, not wrappers around skills installed elsewhere. They were copied from the owner's global skill collection on 2026-09-27 and are maintained in this repository. There is no automatic synchronization.
-
-| Skill | Repository adaptation |
-|---|---|
-| `planner` from global `plan` | Requires the global grill-with-docs interview, uses the repository template, includes applicable architecture diagrams, and respects existing scope authorization. |
-| `implementer` from global `implement` | Uses infrastructure configuration and policy checks plus explicitly selected live evidence. Pytest regression checks apply to testable Python/tooling changes, without blanket TDD or typechecking. |
-| `reviewer` from global `review` | Keeps Spec and Standards, with infrastructure risks as its baseline and Python concerns only for changed tests/tooling. Includes all scoped working-tree files and uses independent reviewers with review-only assignments. |
-
-Original source SHA-256 values provide a comparison baseline without requiring access to the original machine:
-
-```text
-plan       3ffe6bcb0fb69e1fcd2583d55bf4f77ebae35504f570461b703fb92fc797aeb1
-implement  9bfd4e9b08a0573316daf56e5912de1468365cd90ac38b4610c14ed0aecd8c93
-review     f29ec6093ee518b3e02b5587f0d4180e951755f21a5eacecc4299f7d95c8c01e
+```mermaid
+flowchart LR
+    Plan[plan file] --> Change[code + docs + tests]
+    Change --> Static[static: checks]
+    Static --> PlanTier[plan: policy on saved plan]
+    PlanTier --> Review[fresh-context review]
+    Review -->|blockers| Change
+    Review -->|PASS| Done[done: cost current, commit]
+    Done --> Apply[owner: apply saved plan]
+    Apply --> Live[live: verify-live]
+    Live --> Verified[verified]
 ```
 
-The local [docs-gate](../../.agents/skills/docs-gate/SKILL.md) and [cost-audit](../../.agents/skills/cost-audit/SKILL.md) skills remain repository-specific.
+- **Plan**: `planner` writes `docs/plans/YYYY-MM-DD-<slug>.md` from the [template](../plans/TEMPLATE.md). Workstreams let parallel subagents each take one slice; Progress lets a new session resume. The plan is committed with the change for audit.
+- **Static**: `mise run checks` is the same command locally and in CI and needs no credentials. Pre-commit runs its fast subset before every commit.
+- **Plan tier**: `mise run plan` saves `platform/tfplan` only when [the plan policy](../../scripts/plan_policy.py) passes; `mise run apply` applies exactly that file, and Terraform refuses it once state has moved on ([ADR-0009](../adr/0009-apply-only-a-policy-checked-saved-plan.md)). Teardown passes the same gate with `mise run plan -- -destroy`.
+- **Review**: one fresh-context reviewer checks Spec and Standards and reports; it does not fix. The `reviewer` skill is for explicitly requested branch or ref reviews.
+- **Live**: after apply, `mise run verify-live`, read-only. A destroy is complete when apply reports every planned resource destroyed; Terraform state cannot see controller-owned resources, which get their own check with the first controller (AGENTS.md).
 
-The planning interview deliberately depends on the installed global `grill-with-docs`, `grilling`, and `domain-modeling` skills. They are not copied into this repository. Planning stops with a named dependency error if they are unavailable. Use the repository ADR template when an interview produces an ADR. Global skill files remain unchanged.
+## What each check catches
 
-A publisher skill is unnecessary while publication means the owner reviews the diff and deliberately commits or pushes. Add a publishing procedure only when repeated release work creates a concrete need.
+| Check | Catches |
+|---|---|
+| Trivy, TFLint, validate | Insecure or invalid source |
+| Plan policy | Resolved values that break an invariant (internet ingress, public IPs, IMDSv1, unencrypted root volumes, logs kept forever, admin policies, missing `Project` tag) and deletion of retained data. Inline scanner ignores do not apply. |
+| No-drift plan in `verify-live` | Changes made outside Terraform to managed attributes |
+| Live behavior | SSM registration and NAT egress, flow-log delivery, rules added outside Terraform |
+| Controller leftover check (planned) | Load balancers, volumes, and records a controller created and destroy left behind |
 
-## Maintain documentation with code
+## Path to autonomy
 
-Use the Docs gate section on every Feature plan. It names the plan, architecture, runbook, ADR, glossary, and README. Each item needs file evidence and an explanation, or a specific skip reason when that document did not need to change. The plan cannot be skipped.
+The goal is for agents to deploy, verify, and tear down without the owner, so experiments are cheap. Apply stays owner-run until each step holds:
 
-The command checks structure and file existence. It cannot decide whether prose is correct or whether a skip was justified. That is part of independent review. CI runs regression tests for the checker; the Feature-close command is separate from ordinary checks.
+1. The plan policy covers every resource type the platform creates.
+2. `verify-live` and the controller leftover check pass across several owner-run sessions without false failures.
+3. Agent permissions deny direct AWS and `kubectl` mutation and allow only `mise run apply` of a saved plan; an AWS budget alarm caps spend.
+4. The owner grants autonomy in AGENTS.md, scoped to the platform account.
 
-See [ADR-0002](../adr/0002-docs-gate-is-a-feature-command.md) for that boundary. Agents author updates during implementation; CI does not generate or publish prose.
+## Agent access
 
-## Keep setup, checks, cost, and deployment separate
+Agent sessions run in the Claude Code sandbox, which hides `~/.aws` and `~/.ssh` and blocks the Unix sockets Terraform providers and TFLint plugins need. The committed [`.claude/settings.json`](../../.claude/settings.json) opens only what the read-only tiers need:
 
-- Prepare tools and Python dependencies explicitly. All Python packages use uv with `pyproject.toml` and `uv.lock`; all tests use pytest.
-- `mise run checks` and `mise run test-harness` use the prepared environment. Mise task auto-install is disabled, and pytest runs with uv's `--no-sync`.
-- Mise loads `.env.local` for every local task, as selected by the owner. Processes inherit those variables, but required checks need no cloud credentials and must not print them. CI creates an empty `.env.local` and receives no cloud credentials.
-- `mise run cost` is explicitly selected and cached. Required checks, pre-commit, and CI never call it.
-- Live tests require explicit selection and target verification. The owner runs mutating scenarios. See [tests/README.md](../../tests/README.md).
-- The owner deploys from a local machine. CI only checks repository changes. See [ADR-0003](../adr/0003-ci-checks-apply-is-local.md).
+| Setting | Effect |
+|---|---|
+| `env.AWS_PROFILE = eks-platform-agent` | Every AWS call in the session uses the read-only role, including commands the owner starts with `!` |
+| `sandbox.excludedCommands` | `mise run checks`, `mise run plan`, and `mise run verify-live` run outside the sandbox, listed also in the `rtk`-rewritten form the shell hook produces |
 
-Before the first commit, treat all existing files as pre-existing work. Record their baseline and review the task's changes without assuming HEAD exists. Keep `.mise.toml` eligible for Git and exclude local credentials, state, virtual environments, and agent logs.
+Exclusions match the exact command text. `mise run plan -- -destroy`, `mise run apply`, and any compound command stay sandboxed and fail without credentials. Agents cannot run ad hoc `aws`, `terraform`, `tflint`, or `kubectl`, or the bastion access tasks.
+
+The read-only role is a one-time owner prerequisite outside `platform/`, like the state bucket:
+
+- Role `eks-platform-agent-read`, trusted by principals in the platform account, with the AWS managed `ReadOnlyAccess` policy.
+- Inline allow: `s3:PutObject` and `s3:DeleteObject` on the state key's `.tflock` object only, for plan's lock.
+- Inline deny: `secretsmanager:GetSecretValue`, `secretsmanager:BatchGetSecretValue`, `kms:Decrypt`, and `ssm:GetParameter*` on the account's own parameters. Public AWS parameters such as AMI IDs stay readable. The `kms:Decrypt` deny assumes a state bucket encrypted with S3-managed keys; a KMS-encrypted bucket needs a decrypt allow for that key.
+- Profile `eks-platform-agent` in `~/.aws/config` with the role's `role_arn` and the owner's login as `source_profile`. The CLI and Terraform assume it automatically, one hour at a time; no agent keys exist.
+
+The owner applies from their own terminal, where the project settings do not apply; inside the session, `mise run apply` stays sandboxed and fails.
+
+Limit: excluded commands run unsandboxed and can read all of `~/.aws`. The role guards against mistakes, not against an agent that rewrites the task scripts. Autonomous runs need an environment that holds only agent credentials.
+
+## Skill provenance
+
+Codex discovers skills in `.agents/skills/`; Claude Code discovers them through the `.claude/skills` symlink. `planner` and `reviewer` started as copies of the owner's global `plan` and `review` skills and are maintained here. `cost-audit` is repository-specific. Planning interviews use the global `grill-with-docs`, `grilling`, and `domain-modeling` skills, which are deliberately not copied.

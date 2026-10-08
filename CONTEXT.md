@@ -3,7 +3,7 @@
 ## Language
 
 **Harness**:
-The repository's agent workflow, check commands, and documentation contracts.
+The repository's agent workflow, verification tiers, and check commands.
 _Avoid_: the EKS cluster, a required external skill collection
 
 **Platform**:
@@ -14,9 +14,13 @@ _Avoid_: the Terraform directory as a name for the whole system
 One shippable platform capability tracked by a living plan and its acceptance evidence.
 _Avoid_: commit, individual file change
 
-**Docs gate**:
-The Feature-close contract for documentation evidence and reviewed skip reasons.
-_Avoid_: proof that prose is accurate, automatic prose generation, a pre-commit hook
+**Verification tier**:
+One level of evidence for a change: static, plan, or live. Each proves only its own level.
+_Avoid_: a green static check as evidence of a working deployment
+
+**Plan policy**:
+The invariants a Terraform plan must satisfy before `mise run apply` can apply it.
+_Avoid_: the Trivy source scan, a guarantee for resources Terraform does not manage
 
 **Environment**:
 One named deployment of the platform, distinguished by its parameter values.
@@ -35,7 +39,7 @@ An AWS resource whose lifecycle follows a request reconciled by a Kubernetes con
 _Avoid_: a second Terraform-managed copy of the same resource
 
 **Deployment session**:
-The period during which the platform is deployed for an experiment.
+The period during which the platform is deployed, from apply to destroy.
 _Avoid_: a billing month, a test fixture that creates the platform
 
 **Public application**:

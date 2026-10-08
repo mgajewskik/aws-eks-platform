@@ -1,9 +1,11 @@
 ---
-status: accepted
+status: deprecated
 date: 2026-09-07
 ---
 
 # Run the Docs gate as a Feature command, not inside `checks`
+
+Deprecated 2026-10-08: the command checked the checklist's format, never whether docs were accurate, and the reviewer already caught stale docs. Plans now record docs updated in Outcomes and the reviewer verifies them.
 
 ## Context and Problem Statement
 

@@ -16,7 +16,7 @@ For an explicitly requested fixed-point review, run these axes in parallel fresh
 
 Use the Git ref the user supplied. If none was supplied, ask for the baseline. Resolve the ref, record its merge base with HEAD, and inspect committed, staged, and unstaged changes against that base. Enumerate scoped untracked files separately because `git diff` omits them.
 
-For an unborn repository, use an explicit task-start file snapshot or an empty-tree baseline for an initial-import review. State which files predate the task. Stop if the requested baseline cannot be established or there are no task changes. Prefix interactive shell commands with `rtk`.
+For an unborn repository, use an explicit task-start file snapshot or an empty-tree baseline for an initial-import review. State which files predate the task. Stop if the requested baseline cannot be established or there are no task changes.
 
 ## 2. Find the plan and standards
 

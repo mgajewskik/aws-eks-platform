@@ -5,7 +5,7 @@ description: Price this platform when a major billable change is not already cac
 
 # Cost audit
 
-`docs/cost.md` is the only place USD totals live, including the price fingerprint and budget assumptions. Cost analysis is separate and opt-in; required checks, tests, pre-commit, and GitHub Actions never call Infracost. Infracost runs only through `mise run cost`. `.env.local` is the repo env file, loaded by mise for every command in this repo. Reuse existing results to conserve the account's monthly run allowance.
+`docs/cost.md` is the only place USD totals live, including the price fingerprint and budget assumptions. Cost analysis runs once at feature close; required checks, tests, pre-commit, and GitHub Actions never call Infracost. Infracost runs only through `mise run cost`. `scripts/cost.sh --check` confirms the cache is current without calling Infracost. `.env.local` is the repo env file, loaded by mise for every command in this repo. Reuse existing results to conserve the account's monthly run allowance.
 
 Two branches. Run the one this turn picked.
 
@@ -14,13 +14,13 @@ Two branches. Run the one this turn picked.
 1. Read the diff (staged, else the working tree) and the question. A change is major when it adds, removes, or resizes a billable component (the price lines `scripts/cost.sh` hashes). Tags, names, IAM, security groups, docs, and formatting are not major. Completion: the branch is estimate, bill, or skip.
    - **Estimate** — the change is major, or the user asks what a deploy will cost.
    - **Bill** — the user asks what AWS has already charged for a deployed platform.
-   - **Skip** — the diff is not major. Say skip and point at the cached totals.
+   - **Skip** — the diff is not major. Do not call Infracost. When `scripts/cost.sh --check` fails, record the value of `scripts/cost.sh --print-fingerprint` in the `Fingerprint:` line of `docs/cost.md` and leave the totals unchanged. Say skip and point at the cached totals.
 
 ## Estimate
 
 Anticipation is the cost of keeping the platform up, plus usage at a stated quantity. Idle quantity is 0.
 
-1. List every billable component Terraform or GitOps will create. Read counts and sizes from `platform/` and `platform/vars/*.tfvars`. Completion: each component is always-on, usage, or both. Always-on bills per hour while the resource exists, including at idle. Usage bills per byte, request, or capacity unit. NAT, a load balancer, and a public address often have both; those are two rows. IAM, security groups, and the VPC itself are not rows. Region comes from the provider or tfvars. Stop before pricing when the region is absent.
+1. List every billable component Terraform or GitOps will create. Read counts and sizes from `platform/` and `platform/default.tfvars`. Completion: each component is always-on, usage, or both. Always-on bills per hour while the resource exists, including at idle. Usage bills per byte, request, or capacity unit. NAT, a load balancer, and a public address often have both; those are two rows. IAM, security groups, and the VPC itself are not rows. Region comes from the provider or tfvars. Stop before pricing when the region is absent.
 2. Run `mise run cost` once. A cache hit reuses `docs/cost.md` and does not call Infracost. A cache miss calls Infracost once and prints a fingerprint. Price any billable GitOps line that scan did not cover from the AWS Price List. Divide a 730-hour Infracost month by 730 to get the hourly rate. Run `mise run cost -- refresh` only when the user asks to refresh prices. Completion: every component has a unit price, the source, and the date fetched. A missing price stops the audit. Record list price. Note free-tier eligibility only when that same source states it.
 3. Set usage quantity to 0 unless the user stated a quantity. Name that assumption on the row and scale it to each window. Completion: every usage row has a quantity, including 0.
 4. Always-on USD for a window is the hourly rate times the hours. The windows are 6, 12, 24, 168 (column `7d`), and 720 (column `30d`). Write that legend at the top of `docs/cost.md`. Completion: the file has an Always-on table and a Usage table with those columns, plus region, priced-at date, source, and the legend.

@@ -1,0 +1,15 @@
+{
+  "env": {
+    "AWS_PROFILE": "eks-platform-agent"
+  },
+  "sandbox": {
+    "excludedCommands": [
+      "mise run checks",
+      "mise run plan",
+      "mise run verify-live",
+      "rtk mise run checks",
+      "rtk mise run plan",
+      "rtk mise run verify-live"
+    ]
+  }
+}
