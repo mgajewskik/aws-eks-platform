@@ -1,63 +1,32 @@
 #!/usr/bin/env bash
-# Owner-run SSM, SSH, and sshuttle access. No setup or deployment side effects.
+# Owner-run SSM shell, SSH, or sshuttle tunnel to the deployed bastion.
 set -euo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
 
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-cd "$ROOT"
+fail() { echo "bastion: $*" >&2; exit 1; }
+[[ $# -eq 1 && $1 =~ ^(ssm|ssh|vpn)$ ]] || { echo "usage: bastion.sh {ssm|ssh|vpn}" >&2; exit 2; }
+mode=$1
+key="$HOME/.ssh/aws-eks-platform"
+for tool in terraform aws jq session-manager-plugin; do
+  command -v "$tool" >/dev/null || fail "missing $tool; see the bastion runbook"
+done
+[[ $mode == ssm || -f $key ]] || fail "missing SSH key $key"
 
-fail() { printf 'bastion: %s\n' "$*" >&2; exit 1; }
-require() { command -v "$1" >/dev/null || fail "Missing $1. See the bastion runbook."; }
-shell_join() { jq -nr --args '$ARGS.positional | @sh' -- "$@"; }
+# The deployed state names the target; refuse credentials for any other account.
+read -r account region cidr user instance < <(
+  terraform -chdir=platform output -json connection |
+    jq -r '[.account_id, .region, .vpc_cidr, .ssh_user, .instance_id] | select(all(type == "string" and . != "")) | @tsv'
+) || fail "no deployed bastion in Terraform state; check your login and deployment"
+caller=$(aws sts get-caller-identity --region "$region" --query Account --output text) || fail "AWS login failed"
+[[ $caller == "$account" ]] || fail "AWS credentials must be for account $account"
+status=$(aws ssm describe-instance-information --region "$region" --filters "Key=InstanceIds,Values=$instance" \
+  --query 'InstanceInformationList[0].PingStatus' --output text)
+[[ $status == Online ]] || fail "bastion $instance is not Online in SSM; check instance health and cloud-init"
 
-if [[ $# -ne 1 || ! "$1" =~ ^(ssm|ssh|vpn)$ ]]; then
-  printf 'Usage: bash scripts/bastion.sh {ssm|ssh|vpn}\n' >&2
-  exit 2
-fi
-mode="$1"
-account_id="220263133738"
-region="eu-north-1"
-vpc_cidr="10.80.0.0/16"
-identity="$HOME/.ssh/aws-eks-platform"
-for tool in terraform aws jq session-manager-plugin; do require "$tool"; done
-if [[ "$mode" != ssm ]]; then
-  require ssh
-  [[ -f "$identity" ]] || fail "Missing laptop SSH key: $identity"
-fi
-if [[ "$mode" == vpn ]]; then require sshuttle; fi
-
-# Check credentials before reading remote state or selecting an instance.
-caller_account=$(aws sts get-caller-identity --query Account --output text \
-  --region "$region" --no-cli-pager) || fail "AWS identity check failed. Check your login."
-[[ "$caller_account" == "$account_id" ]] || fail "AWS account must be $account_id."
-
-connection=$(terraform -chdir=platform output -json connection) || \
-  fail "Terraform connection output is unavailable. Deploy the platform first."
-jq -e --arg account "$account_id" --arg region "$region" --arg cidr "$vpc_cidr" '
-  .account_id == $account and .region == $region and .vpc_cidr == $cidr and
-  .ssh_user == "ec2-user" and
-  (.instance_id | type == "string" and test("^i-([0-9a-f]{8}|[0-9a-f]{17})$"))
-' <<< "$connection" >/dev/null || fail "State has a missing or mismatched connection target."
-instance_id=$(jq -r '.instance_id' <<< "$connection")
-
-online_instance=$(aws ssm describe-instance-information \
-  --filters "Key=InstanceIds,Values=$instance_id" \
-  --query 'InstanceInformationList[?PingStatus==`Online`].InstanceId' \
-  --output text --region "$region" --no-cli-pager) || fail "SSM readiness check failed."
-[[ "$online_instance" == "$instance_id" ]] || fail "Bastion is not Online in SSM. Check instance health and cloud-init."
-
-if [[ "$mode" == ssm ]]; then
-  exec aws ssm start-session --target "$instance_id" --region "$region" --no-cli-pager
-fi
-
-proxy=(aws ssm start-session --target "$instance_id" --document-name AWS-StartSSHSession
-  --parameters 'portNumber=%p' --region "$region" --no-cli-pager)
-ssh_args=(ssh -o "ProxyCommand=$(shell_join "${proxy[@]}")" -o IdentitiesOnly=yes
-  -o StrictHostKeyChecking=ask -i "$identity")
-remote="ec2-user@$instance_id"
-if [[ "$mode" == ssh ]]; then
-  exec "${ssh_args[@]}" "$remote"
-fi
-
-printf 'Tunneling %s and ordinary DNS through %s. Ctrl+C stops the tunnel.\n' "$vpc_cidr" "$instance_id"
-exec sshuttle --ssh-cmd "$(shell_join "${ssh_args[@]}")" \
-  --remote "$remote" --dns --disable-ipv6 "$vpc_cidr"
+[[ $mode == ssm ]] && exec aws ssm start-session --target "$instance" --region "$region"
+proxy="aws ssm start-session --target $instance --document-name AWS-StartSSHSession --parameters portNumber=%p --region $region"
+ssh=(ssh -o "ProxyCommand=$proxy" -o IdentitiesOnly=yes -o StrictHostKeyChecking=ask -i "$key")
+[[ $mode == ssh ]] && exec "${ssh[@]}" "$user@$instance"
+echo "Tunneling $cidr and DNS through $instance. Ctrl+C stops."
+printf -v ssh_cmd "%q " "${ssh[@]}"
+exec sshuttle --ssh-cmd "$ssh_cmd" --remote "$user@$instance" --dns --disable-ipv6 "$cidr"
