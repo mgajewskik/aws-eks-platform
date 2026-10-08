@@ -1,0 +1,17 @@
+# Shared by `mise run checks` and pre-commit. Local env, state, and plan files hold secrets by design;
+# Git ignores them, so the secret scan skips them too.
+scan:
+  skip-dirs:
+    - "**/.git"
+    - "**/.codex"
+    - "**/.terraform"
+    - "**/.venv"
+    - "**/.pytest_cache"
+    - "**/__pycache__"
+    - "**/.local"
+  skip-files:
+    - "**/.env*"
+    - "**/*.secret.tfvars"
+    - "**/*.tfstate*"
+    - "**/*.tfplan"
+    - "**/tfplan"

@@ -1,17 +1,30 @@
+# Fast checks before every commit. The full set, including validate, TFLint, and Trivy config, is `mise run checks`.
 repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
       - id: trailing-whitespace
       - id: end-of-file-fixer
-      - id: detect-private-key
       - id: check-yaml
       - id: check-added-large-files
+      - id: detect-private-key
+      - id: detect-aws-credentials
+        args: [--allow-missing-credentials]
   - repo: local
     hooks:
       - id: terraform-fmt
-        name: terraform fmt -check
+        name: terraform fmt
         entry: terraform fmt -check -recursive platform
         language: system
         pass_filenames: false
         files: \.tf$
+      - id: trivy-secrets
+        name: trivy secret scan
+        entry: trivy fs --scanners secret --exit-code 1 --quiet .
+        language: system
+        pass_filenames: false
+      - id: harness-tests
+        name: harness tests
+        entry: uv run --locked --no-sync --no-env-file pytest -q
+        language: system
+        pass_filenames: false
