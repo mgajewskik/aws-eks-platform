@@ -9,6 +9,7 @@ scan:
     - "**/.pytest_cache"
     - "**/__pycache__"
     - "**/.local"
+    - "**/.devcontainer/aws"
   skip-files:
     - "**/.env*"
     - "**/*.secret.tfvars"

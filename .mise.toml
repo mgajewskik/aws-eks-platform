@@ -9,6 +9,7 @@ _.file = { path = ".env.local", redact = true }
 
 AWS_REGION = "eu-north-1"
 AWS_DEFAULT_REGION = "eu-north-1"
+DEVCONTAINER_AWS_ROLE_ARN = "arn:aws:iam::220263133738:role/devcontainer"
 
 [tools]
 aws = "2.36.40"

@@ -13,6 +13,7 @@ override.tf.json
 .env.local
 .env
 .env.*
+.devcontainer/aws/
 .venv/
 .local/
 .pytest_cache/
